@@ -1,5 +1,7 @@
 # pi-translation
 
+<img src="./screenshot.png" alt="pi-translation-screenshot" />
+
 Clipboard-first translation workspace for Pi. The overlay keeps its conversation separate from the active Pi session while sending translation requests through a selected model provider.
 
 ## Install
