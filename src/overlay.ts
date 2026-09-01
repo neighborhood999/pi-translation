@@ -15,7 +15,6 @@ import {
   createTranslationMessage,
   extractAssistantText,
   isUsableAssistantResponse,
-  TRANSLATOR_SYSTEM_PROMPT,
   type TranslationModel,
 } from './model.ts';
 import {
@@ -206,7 +205,7 @@ export class TranslationOverlay implements Component, Focusable {
     try {
       const response = await this.modelRegistry.complete(
         this.model,
-        { systemPrompt: TRANSLATOR_SYSTEM_PROMPT, messages: this.messages },
+        { messages: this.messages },
         { signal: controller.signal, cacheRetention: 'none' },
       );
 

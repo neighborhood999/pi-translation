@@ -51,6 +51,22 @@ test('translation state records only local refinement history', () => {
   assert.equal(refined.draft, '');
 });
 
+test('translation request carries its provider-independent instructions', () => {
+  const message = createTranslationMessage('hello', 'Traditional Chinese');
+
+  if (typeof message.content !== 'string') {
+    assert.fail('expected string translation message');
+  }
+  assert.ok(
+    message.content.includes('Preserve meaning, formatting, code, names, and placeholders.'),
+  );
+  assert.ok(
+    message.content.endsWith(
+      'Translate the following source text into Traditional Chinese.\n\nhello',
+    ),
+  );
+});
+
 test('target language parsing defaults and rejects control input', () => {
   assert.deepEqual(parseTargetLanguage(''), { ok: true, value: 'English' });
   assert.deepEqual(parseTargetLanguage(' Japanese '), { ok: true, value: 'Japanese' });
@@ -97,10 +113,11 @@ test('responsive resize seam detects side-panel to modal reflow', () => {
 test('display sanitization strips terminal controls while model messages retain raw text', () => {
   const source = '\u001b]52;c;secret\u0007visible\ttext';
   assert.equal(sanitizeTerminalText(source), 'visible  text');
-  assert.equal(
-    createTranslationMessage(source, 'French').content,
-    `Translate the following source text into French.\n\n${source}`,
-  );
+  const modelMessage = createTranslationMessage(source, 'French').content;
+  if (typeof modelMessage !== 'string') {
+    assert.fail('expected string translation message');
+  }
+  assert.ok(modelMessage.endsWith(`Translate the following source text into French.\n\n${source}`));
   assert.equal(sanitizeTerminalText('line\nnext'), 'line\nnext');
 });
 
