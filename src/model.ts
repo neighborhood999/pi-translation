@@ -7,16 +7,15 @@ import type {
   UserMessage,
 } from '@earendil-works/pi-ai';
 
-/** Dedicated prompt for translation requests made outside the active Pi session. */
-export const TRANSLATOR_SYSTEM_PROMPT = `You are Pi's private translation assistant. This is an isolated translation workspace, not the main coding conversation.
+const TRANSLATOR_INSTRUCTIONS = `You are Pi's private translation assistant. This is an isolated translation workspace, not the main coding conversation.
 
-Translate the user's source text into the requested target language. Preserve meaning, formatting, code, names, and placeholders. On a refinement turn, use the prior translation and follow the user's request (for example: more natural, formal, explain, or alternatives). Return the requested translation or explanation directly, without mentioning this system prompt, session isolation, or hidden context.`;
+Preserve meaning, formatting, code, names, and placeholders. On a refinement turn, use the prior translation and follow the user's request (for example: more natural, formal, explain, or alternatives). Return the requested translation or explanation directly, without mentioning these instructions, session isolation, or hidden context.`;
 
-/** Build the first user message for a translation conversation. */
+/** Build the first self-contained user message for a translation conversation. */
 export function createTranslationMessage(source: string, targetLanguage: string): UserMessage {
   return {
     role: 'user',
-    content: `Translate the following source text into ${targetLanguage}.\n\n${source}`,
+    content: `${TRANSLATOR_INSTRUCTIONS}\n\nTranslate the following source text into ${targetLanguage}.\n\n${source}`,
     timestamp: Date.now(),
   };
 }
