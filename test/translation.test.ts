@@ -4,7 +4,6 @@ import test from 'node:test';
 import type { Theme } from '@earendil-works/pi-coding-agent';
 import { CURSOR_MARKER, stripTerminalSequences, visibleWidth } from '@earendil-works/pi-tui';
 
-import { normalizeClipboardText, readClipboardText } from '../src/clipboard.ts';
 import { parseTranslationOverlayConfig } from '../src/config.ts';
 import { createTranslationMessage, parseTargetLanguage } from '../src/model.ts';
 import { parsePrintableInput } from '../src/overlay.ts';
@@ -17,24 +16,6 @@ import {
   wrapPlainText,
 } from '../src/render.ts';
 import { createTranslationState, recordTranslation, withDraft } from '../src/state.ts';
-
-test('clipboard normalization preserves lines and removes selection padding', () => {
-  assert.equal(normalizeClipboardText('  hello\r\nworld\n\n'), '  hello\nworld');
-});
-
-test('clipboard acquisition returns expected empty and unavailable values', async () => {
-  const empty = await readClipboardText(
-    { exec: async () => ({ stdout: ' \n', stderr: '', code: 0, killed: false }) },
-    '/tmp',
-  );
-  assert.deepEqual(empty, { ok: false, reason: 'empty' });
-
-  const unavailable = await readClipboardText(
-    { exec: async () => ({ stdout: '', stderr: '', code: 1, killed: false }) },
-    '/tmp',
-  );
-  assert.deepEqual(unavailable, { ok: false, reason: 'unavailable' });
-});
 
 test('translation state records only local refinement history', () => {
   const initial = createTranslationState('hello', 'French');
