@@ -13,13 +13,13 @@ pi install git:github.com/neighborhood999/pi-translation
 For a reproducible installation, use a tagged release:
 
 ```sh
-pi install git:github.com/neighborhood999/pi-translation@v0.1.0
+pi install git:github.com/neighborhood999/pi-translation
 ```
 
 To try the extension for one Pi process without adding it to your settings:
 
 ```sh
-pi -e git:github.com/neighborhood999/pi-translation@v0.1.0
+pi -e git:github.com/neighborhood999/pi-translation
 ```
 
 Restart Pi or run `/reload` in an already running interactive Pi session. To upgrade a pinned installation, install the desired newer tag explicitly.
