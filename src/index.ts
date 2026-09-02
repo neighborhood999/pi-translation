@@ -60,7 +60,7 @@ export default function translationOverlayExtension(pi: ExtensionAPI): void {
       ctx.ui.notify(
         clipboard.reason === 'empty'
           ? 'Clipboard is empty. Copy terminal text, then run /translate.'
-          : 'Clipboard is unavailable. Copy terminal text and verify macOS pbpaste is available.',
+          : 'Clipboard is unavailable. Copy terminal text and verify that a supported clipboard command is installed.',
         'error',
       );
       return;
