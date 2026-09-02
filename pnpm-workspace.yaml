@@ -1,3 +1,7 @@
 savePrefix: ''
 minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true
+allowBuilds:
+  '@google/genai': false
+  esbuild: true
+  protobufjs: false
