@@ -1,5 +1,7 @@
 # pi-translation
 
+[![CI](https://github.com/neighborhood999/pi-translation/actions/workflows/ci.yml/badge.svg)](https://github.com/neighborhood999/pi-translation/actions/workflows/ci.yml)
+
 <img src="./screenshot.png" alt="pi-translation-screenshot" />
 
 Clipboard-first translation workspace for Pi. The overlay keeps its conversation separate from the active Pi session while sending translation requests through a selected model provider.
@@ -84,10 +86,11 @@ Isolation does not prevent network or provider-side handling: requests go to the
 
 ## Compatibility and limitations
 
-- Tested with Pi **0.84.4** for noninteractive extension loading and `/translate` command dispatch. Automated tests cover command selection and pure helpers, not interactive TUI behavior, model completion, session isolation, or real clipboard integration.
+- Tested with Pi **0.84.4** for noninteractive extension loading and `/translate` command dispatch.
+- GitHub Actions runs installation, formatting, linting, typechecking, and automated tests on macOS, Ubuntu Linux, and Windows. Automated tests cover command selection and pure helpers, not interactive TUI behavior, model completion, session isolation, or real clipboard integration.
 - The Pi overlay API used here is experimental and may change in later releases.
 - Clipboard support is command-based and runtime-dependent. macOS uses `pbpaste`; Windows uses `powershell.exe` and `Get-Clipboard -Raw -Format Text`; Linux uses `wl-paste --no-newline --type text` on Wayland and `xclip -selection clipboard -out` or `xsel --clipboard --output` on X11.
-- Windows and Linux support remain experimental. Compatibility has not been established by real-host validation in this repository; automated tests mock command execution and do not claim stable platform compatibility.
+- Windows and Linux clipboard support remain experimental. Cross-platform CI confirms that the extension installs and its automated checks pass on each operating system, but compatibility has not been established in interactive desktop sessions; automated tests mock command execution and do not claim stable clipboard compatibility.
 - Linux chooses `wl-paste` first when both Wayland and X11 are available, then falls back to `xclip` and `xsel`. A rejected command, nonzero exit, or killed process permits the next eligible adapter; successful empty output is reported as empty without fallback.
 - Clipboard commands run on the host where Pi runs and use that process's desktop-session environment. An SSH session does not bridge the clipboard: remote Pi reads a remote clipboard, not the local workstation's clipboard. Run Pi locally to read the local clipboard.
 - Headless Linux has no eligible clipboard adapter unless a supported Wayland/X11 session and its environment are actually available; `/translate` reports the clipboard as unavailable.
@@ -129,7 +132,7 @@ For each supported host, run the normal smoke test with short text, then repeat 
 
 For the **missing-tool** cases, temporarily remove or rename the selected utility from `PATH` and expect `unavailable` (or the next eligible X11 fallback). For **fallback**, make `wl-paste` fail while both displays are available and expect X11; make `xclip` fail and expect `xsel`. For **empty**, clear the clipboard and expect the empty result without trying another adapter. For **non-text**, copy an image, HTML, or rich-text item and expect unsupported/unavailable or text-only output rather than image/rich-text preservation. Confirm Unicode and multiline content is returned without corruption.
 
-Windows and Linux rows require validation on real hosts; mocked tests alone do not establish compatibility.
+Windows and Linux clipboard rows require validation in interactive desktop sessions; cross-platform CI and mocked tests alone do not establish clipboard compatibility.
 
 ## Development
 
