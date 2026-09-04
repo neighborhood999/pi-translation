@@ -70,12 +70,12 @@ Requests still go to the selected model provider and are subject to that provide
 
 Clipboard commands run on the machine where Pi runs:
 
-| Platform | Requirement | Command |
-| --- | --- | --- |
-| macOS | `pbpaste` | `pbpaste` |
-| Windows | PowerShell | `Get-Clipboard -Raw -Format Text` |
+| Platform      | Requirement                       | Command                             |
+| ------------- | --------------------------------- | ----------------------------------- |
+| macOS         | `pbpaste`                         | `pbpaste`                           |
+| Windows       | PowerShell                        | `Get-Clipboard -Raw -Format Text`   |
 | Linux Wayland | `wl-clipboard`, `WAYLAND_DISPLAY` | `wl-paste --no-newline --type text` |
-| Linux X11 | `DISPLAY`, `xclip` or `xsel` | `xclip`, then `xsel` |
+| Linux X11     | `DISPLAY`, `xclip` or `xsel`      | `xclip`, then `xsel`                |
 
 Windows and Linux support is experimental. Linux tries Wayland first, then X11 after a failure. Headless Linux has no clipboard adapter. WSL requires a Linux clipboard utility and a usable display; it does not automatically use the Windows clipboard.
 
