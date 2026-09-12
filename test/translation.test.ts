@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import type { Theme } from '@earendil-works/pi-coding-agent';
+import type { ModelRegistry, Theme } from '@earendil-works/pi-coding-agent';
+import type { TUI } from '@earendil-works/pi-tui';
 import { CURSOR_MARKER, stripTerminalSequences, visibleWidth } from '@earendil-works/pi-tui';
 
 import { parseTranslationOverlayConfig } from '../src/config.ts';
-import { createTranslationMessage, parseTargetLanguage } from '../src/model.ts';
-import { parsePrintableInput } from '../src/overlay.ts';
+import {
+  createTranslationMessage,
+  parseTargetLanguage,
+  type TranslationModel,
+} from '../src/model.ts';
+import { parsePrintableInput, TranslationOverlay } from '../src/overlay.ts';
 import {
   getTranslationOverlayLayout,
   sanitizeTerminalText,
@@ -134,6 +139,54 @@ test('overlay renders an opaque background and a closed top border', () => {
   assert.ok(
     lines.every((line) => line.startsWith('<background>') && line.endsWith('</background>')),
   );
+});
+
+test('long translations can scroll to their final line', () => {
+  const theme: Pick<Theme, 'bg' | 'bold' | 'fg'> = {
+    bg: (_color, text) => text,
+    bold: (text) => text,
+    fg: (_color, text) => text,
+  };
+  const tui = {
+    terminal: { columns: 80, rows: 18 },
+    requestRender() {},
+  } as unknown as TUI;
+  const translation = Array.from(
+    { length: 20 },
+    (_, index) => `translation line ${index + 1}`,
+  ).join('\n');
+  const state = recordTranslation(
+    createTranslationState('source', 'Traditional Chinese'),
+    undefined,
+    translation,
+  );
+  const overlay = new TranslationOverlay(
+    tui,
+    theme as Theme,
+    {} as ModelRegistry,
+    { provider: 'test', id: 'translator' } as TranslationModel,
+    state.source,
+    state.targetLanguage,
+    { copyLatest: async () => {}, insertLatest: () => {} },
+    () => {},
+    { state, messages: [], cursor: 0, notice: undefined, bodyScrollOffset: 0 },
+  );
+
+  const initial = stripTerminalSequences(overlay.render(78).join('\n'));
+  assert.ok(initial.includes('translation line 1'));
+  assert.ok(!initial.includes('translation line 20'));
+
+  overlay.handleInput('\u001b[6~');
+  overlay.handleInput('\u001b[6~');
+  overlay.handleInput('\u001b[6~');
+  const scrolled = stripTerminalSequences(overlay.render(78).join('\n'));
+  assert.ok(scrolled.includes('translation line 20'));
+
+  overlay.handleInput('\u001b[5~');
+  overlay.handleInput('\u001b[5~');
+  overlay.handleInput('\u001b[5~');
+  const returned = stripTerminalSequences(overlay.render(78).join('\n'));
+  assert.ok(returned.includes('translation line 1'));
 });
 
 test('plain text wrapping uses terminal-cell width and preserves explicit lines', () => {
