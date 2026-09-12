@@ -37,6 +37,8 @@ Use `/translate <language>` for a one-time target, for example `/translate Japan
 
 ### Controls
 
+- **Up/Down** — scroll long translations one line
+- **Page Up/Page Down** — scroll long translations one page
 - **Enter** — send a refinement
 - **Ctrl+Y** — copy the latest translation
 - **Ctrl+I** — insert it into Pi's editor

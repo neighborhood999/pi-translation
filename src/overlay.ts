@@ -18,6 +18,7 @@ import {
   type TranslationModel,
 } from './model.ts';
 import {
+  getTranslationBodyScrollLimit,
   getTranslationOverlayLayout,
   renderTranslationOverlay,
   translationOverlayLayoutChanged,
@@ -46,6 +47,7 @@ export type TranslationOverlayResume = {
   readonly messages: readonly Message[];
   readonly cursor: number;
   readonly notice: string | undefined;
+  readonly bodyScrollOffset: number;
 };
 
 /** Result returned when the translation overlay is dismissed or reflowed. */
@@ -65,6 +67,8 @@ export class TranslationOverlay implements Component, Focusable {
   private state: TranslationState;
   private cursor = 0;
   private notice: string | undefined;
+  private bodyScrollOffset = 0;
+  private bodyPageSize = 1;
   private closed = false;
   private activeController: AbortController | undefined;
   private messages: Message[] = [];
@@ -89,6 +93,7 @@ export class TranslationOverlay implements Component, Focusable {
       this.messages = [...resume.messages];
       this.cursor = resume.cursor;
       this.notice = resume.notice;
+      this.bodyScrollOffset = resume.bodyScrollOffset;
     } else {
       this.state = createTranslationState(source, targetLanguage);
       void this.requestTranslation();
@@ -108,6 +113,26 @@ export class TranslationOverlay implements Component, Focusable {
 
     if (matchesKey(data, Key.ctrl('i'))) {
       this.insertLatest();
+      return;
+    }
+
+    if (matchesKey(data, Key.up)) {
+      this.scrollBody(-1);
+      return;
+    }
+
+    if (matchesKey(data, Key.down)) {
+      this.scrollBody(1);
+      return;
+    }
+
+    if (matchesKey(data, Key.pageUp)) {
+      this.scrollBody(-this.bodyPageSize);
+      return;
+    }
+
+    if (matchesKey(data, Key.pageDown)) {
+      this.scrollBody(this.bodyPageSize);
       return;
     }
 
@@ -158,15 +183,21 @@ export class TranslationOverlay implements Component, Focusable {
   render(width: number): string[] {
     this.queueResizeIfNeeded();
     const rows = this.tui.terminal.rows ?? 30;
+    this.bodyPageSize = Math.max(1, rows - 9);
+    this.bodyScrollOffset = Math.min(
+      this.bodyScrollOffset,
+      getTranslationBodyScrollLimit(this.state, width, this.bodyPageSize),
+    );
     return renderTranslationOverlay(
       this.state,
       this.theme,
       width,
-      Math.max(0, rows - 9),
+      this.bodyPageSize,
       this.cursor,
       this.focused,
       this.notice,
       `${this.model.provider}/${this.model.id}`,
+      this.bodyScrollOffset,
     );
   }
 
@@ -196,6 +227,7 @@ export class TranslationOverlay implements Component, Focusable {
     }
     this.state = withDraft(beginTranslation(this.state), '');
     this.cursor = 0;
+    this.bodyScrollOffset = 0;
     this.notice = undefined;
     this.tui.requestRender();
 
@@ -244,6 +276,15 @@ export class TranslationOverlay implements Component, Focusable {
       }
       this.queueResizeIfNeeded();
     }
+  }
+
+  private scrollBody(delta: number): void {
+    const nextOffset = Math.max(0, this.bodyScrollOffset + delta);
+    if (nextOffset === this.bodyScrollOffset) {
+      return;
+    }
+    this.bodyScrollOffset = nextOffset;
+    this.tui.requestRender();
   }
 
   private submitDraft(): void {
@@ -353,6 +394,7 @@ export class TranslationOverlay implements Component, Focusable {
           messages: [...this.messages],
           cursor: this.cursor,
           notice: this.notice,
+          bodyScrollOffset: this.bodyScrollOffset,
         },
       });
     });

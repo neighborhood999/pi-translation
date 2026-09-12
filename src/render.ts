@@ -64,6 +64,21 @@ export function wrapPlainText(text: string, width: number): string[] {
   return wrapTextWithAnsi(text, Math.max(1, Math.floor(width)));
 }
 
+/** Return the greatest valid vertical offset for the translation body. */
+export function getTranslationBodyScrollLimit(
+  state: TranslationState,
+  width: number,
+  maxBodyLines: number,
+): number {
+  const totalWidth = Math.max(10, Math.floor(width));
+  const innerWidth = Math.max(6, totalWidth - 2);
+  const contentWidth = Math.max(4, innerWidth - 2);
+  return Math.max(
+    0,
+    buildTranslationBody(state, IDENTITY_THEME, contentWidth).length - maxBodyLines,
+  );
+}
+
 /** Render the isolated translation workspace as terminal lines. */
 export function renderTranslationOverlay(
   state: TranslationState,
@@ -74,50 +89,24 @@ export function renderTranslationOverlay(
   focused: boolean,
   notice: string | undefined,
   modelLabel: string,
+  bodyScrollOffset = 0,
 ): string[] {
   const totalWidth = Math.max(10, Math.floor(width));
   const innerWidth = Math.max(6, totalWidth - 2);
   const contentWidth = Math.max(4, innerWidth - 2);
-  const body: string[] = [];
-  const safeSource = sanitizeTerminalText(state.source);
+  const body = buildTranslationBody(state, theme, contentWidth);
   const safeTargetLanguage = sanitizeTerminalText(state.targetLanguage);
-  const safeLatestTranslation = state.latestTranslation
-    ? sanitizeTerminalText(state.latestTranslation)
-    : undefined;
   const safeNotice = notice ? sanitizeTerminalText(notice) : undefined;
   const safeModelLabel = sanitizeTerminalText(modelLabel);
-
-  body.push(theme.bold(theme.fg('accent', 'Source')));
-  const sourceLines = wrapPlainText(safeSource, contentWidth);
-  body.push(...sourceLines.slice(0, 4).map((line) => ` ${line}`));
-  if (sourceLines.length > 4) {
-    body.push(' …');
+  const viewportSize = Math.max(0, maxBodyLines);
+  const scrollLimit = Math.max(0, body.length - viewportSize);
+  const scrollOffset = Math.max(0, Math.min(Math.floor(bodyScrollOffset), scrollLimit));
+  const visibleBody = body.slice(scrollOffset, scrollOffset + viewportSize);
+  if (scrollOffset > 0 && visibleBody.length > 0) {
+    visibleBody[0] = ' ↑ more';
   }
-  body.push('');
-
-  body.push(theme.bold(theme.fg('accent', 'Latest translation')));
-  if (safeLatestTranslation) {
-    body.push(...wrapPlainText(safeLatestTranslation, contentWidth).map((line) => ` ${line}`));
-  } else if (state.status.kind === 'loading') {
-    body.push(` ${theme.fg('muted', 'Translating…')}`);
-  } else {
-    body.push(` ${theme.fg('dim', 'No translation yet')}`);
-  }
-
-  const previousTurns = state.turns.slice(0, -1);
-  if (previousTurns.length > 0) {
-    body.push('');
-    body.push(theme.bold(theme.fg('muted', 'Conversation history')));
-    for (const turn of previousTurns.slice(-4)) {
-      const label = turn.role === 'user' ? 'You' : 'Previous';
-      const text = sanitizeTerminalText(turn.text);
-      body.push(...wrapPlainText(`${label}: ${text}`, contentWidth).map((line) => ` ${line}`));
-    }
-  }
-
-  const visibleBody = body.slice(0, Math.max(0, maxBodyLines));
-  if (body.length > visibleBody.length && visibleBody.length > 0) {
-    visibleBody[visibleBody.length - 1] = ' …';
+  if (scrollOffset < scrollLimit && visibleBody.length > 0) {
+    visibleBody[visibleBody.length - 1] = ' ↓ more';
   }
 
   const lines: string[] = [
@@ -154,7 +143,11 @@ export function renderTranslationOverlay(
   );
   lines.push(borderLine(theme, `${draftPrefix}${draft}`, innerWidth));
   lines.push(
-    borderLine(theme, ` ${theme.fg('dim', 'Enter send • Esc close • Ctrl+C cancel')}`, innerWidth),
+    borderLine(
+      theme,
+      ` ${theme.fg('dim', '↑↓/PgUp/PgDn scroll • Enter send • Esc/Ctrl+C close')}`,
+      innerWidth,
+    ),
   );
   lines.push(borderLine(theme, ` ${theme.fg('dim', 'Ctrl+Y copy • Ctrl+I insert')}`, innerWidth));
   lines.push(bottomBorder(theme, innerWidth));
@@ -218,6 +211,53 @@ const GRAPHEME_SEGMENTER = new Intl.Segmenter(undefined, { granularity: 'graphem
 
 function graphemes(text: string): string[] {
   return Array.from(GRAPHEME_SEGMENTER.segment(text), (part) => part.segment);
+}
+
+const IDENTITY_THEME: TranslationOverlayTheme = {
+  bg: (_color, text) => text,
+  bold: (text) => text,
+  fg: (_color, text) => text,
+};
+
+function buildTranslationBody(
+  state: TranslationState,
+  theme: TranslationOverlayTheme,
+  contentWidth: number,
+): string[] {
+  const body: string[] = [];
+  const safeSource = sanitizeTerminalText(state.source);
+  const safeLatestTranslation = state.latestTranslation
+    ? sanitizeTerminalText(state.latestTranslation)
+    : undefined;
+
+  body.push(theme.bold(theme.fg('accent', 'Source')));
+  const sourceLines = wrapPlainText(safeSource, contentWidth);
+  body.push(...sourceLines.slice(0, 4).map((line) => ` ${line}`));
+  if (sourceLines.length > 4) {
+    body.push(' …');
+  }
+  body.push('');
+
+  body.push(theme.bold(theme.fg('accent', 'Latest translation')));
+  if (safeLatestTranslation) {
+    body.push(...wrapPlainText(safeLatestTranslation, contentWidth).map((line) => ` ${line}`));
+  } else if (state.status.kind === 'loading') {
+    body.push(` ${theme.fg('muted', 'Translating…')}`);
+  } else {
+    body.push(` ${theme.fg('dim', 'No translation yet')}`);
+  }
+
+  const previousTurns = state.turns.slice(0, -1);
+  if (previousTurns.length > 0) {
+    body.push('');
+    body.push(theme.bold(theme.fg('muted', 'Conversation history')));
+    for (const turn of previousTurns.slice(-4)) {
+      const label = turn.role === 'user' ? 'You' : 'Previous';
+      const text = sanitizeTerminalText(turn.text);
+      body.push(...wrapPlainText(`${label}: ${text}`, contentWidth).map((line) => ` ${line}`));
+    }
+  }
+  return body;
 }
 
 function topBorder(theme: TranslationOverlayTheme, content: string, innerWidth: number): string {
