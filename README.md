@@ -87,7 +87,7 @@ An SSH session reads the remote host's clipboard, not your local clipboard. Pi c
 
 ## Compatibility
 
-- Tested with Pi **0.84.4**.
+- Automated checks pass with Pi **1.0.0**.
 - CI runs installation, formatting, linting, typechecking, and tests on macOS, Linux, and Windows.
 - Clipboard commands and interactive TUI behavior require real-host testing.
 - Pi's overlay API is experimental and may change.
